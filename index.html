@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>План на сегодня</title>
+
+<!-- Подключаем шрифты -->
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100vh;
+  background: url("forest.jpg") no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.35);
+}
+
+.header {
+  margin-top: 50px;
+  text-align: center;
+  z-index: 2;
+}
+
+.header h1 {
+  font-family: "Pacifico", cursive;
+  font-size: 64px;
+  color: rgba(230, 240, 220, 0.95);
+  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.time {
+  margin-top: 10px;
+  font-family: "Pacifico", cursive;
+  font-size: 34px;
+  color: rgba(210, 225, 200, 0.95);
+  text-shadow: 0 3px 8px rgba(0,0,0,0.5);
+}
+
+.card {
+  margin-top: 40px;
+  background: rgba(20, 25, 30, 0.85);
+  padding: 20px;
+  border-radius: 16px;
+  width: 360px;
+  z-index: 2;
+  color: white;
+}
+
+/* === НОВЫЙ ШРИФТ ДЛЯ ПОЛЯ ВВОДА, ДРОПДАУНА И ТЕКСТА ЗАДАЧ === */
+#taskInput,
+.dropdown .selected,
+.dropdown .menu div,
+.task .text {
+  font-family: 'Bible Script', 'Dancing Script', cursive;
+}
+
+/* === ТЁМНЫЙ ЦВЕТ ТЕКСТА ЗАДАЧ И УВЕЛИЧЕННЫЙ ШРИФТ === */
+.task {
+  color: #111;               /* теперь текст задач тёмный */
+  font-size: 18px;           /* базовый размер для всей задачи */
+}
+
+.task .text {
+  font-size: 20px;           /* дополнительно увеличиваем сам текст */
+}
+
+/* Остальные стили без изменений */
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: #2e3b2f;
+  color: white;
+  cursor: pointer;
+}
+
+/* TASK */
+.task {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  user-select: none;
+  cursor: grab;
+}
+
+.task:active {
+  cursor: grabbing;
+}
+
+/* пастельные цвета в зависимости от приоритета (не меняем) */
+.task.priority-high {
+  background-color: #f8d7da; /* светло-красный */
+}
+.task.priority-medium {
+  background-color: #fff3cd; /* светло-жёлтый */
+}
+.task.priority-low {
+  background-color: #d4edda; /* светло-зелёный */
+}
+
+.task-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.priority {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* red strikethrough */
+.task.done .text {
+  text-decoration: line-through;
+  text-decoration-color: red;
+  opacity: 0.6;
+}
+
+.small-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+
+/* dropdown */
+.dropdown {
+  width: 100%;
+  background: #cfe8cf;
+  border-radius: 8px;
+  padding: 10px;
+  color: #1f2a1f;
+  cursor: pointer;
+  position: relative;
+  margin-top: 10px;
+}
+
+.dropdown .menu {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 110%;
+  background: #b9d9b9;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.dropdown .menu div {
+  padding: 10px;
+}
+
+.dropdown .menu div:hover {
+  background: #a8cfa8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<div class="header">
+  <h1>🌲 План на сегодня</h1>
+  <div class="time" id="clock"></div>
+</div>
+
+<div class="card">
+
+  <input type="text" id="taskInput" placeholder="Что надо сделать?">
+
+  <div class="dropdown" id="priorityDropdown">
+    <div class="selected">⚡ средненько</div>
+
+    <div class="menu">
+      <div data-value="high">🔥 важно</div>
+      <div data-value="medium">⚡ средненько</div>
+      <div data-value="low">🌿 не срочно</div>
+    </div>
+  </div>
+
+  <button onclick="addTask()">Добавить</button>
+
+  <div id="list"></div>
+</div>
+
+<script>
+
+// CLOCK
+function updateClock() {
+  const now = new Date();
+  document.getElementById("clock").innerText =
+    now.toLocaleDateString("ru-RU") + " • " + now.toLocaleTimeString("ru-RU");
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+
+// PRIORITY
+let selectedPriority = "medium";
+
+const dropdown = document.getElementById("priorityDropdown");
+const selected = dropdown.querySelector(".selected");
+const menu = dropdown.querySelector(".menu");
+const items = dropdown.querySelectorAll(".menu div");
+
+selected.onclick = () => {
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+};
+
+items.forEach(item => {
+  item.onclick = () => {
+    selected.innerText = item.innerText;
+    selectedPriority = item.dataset.value;
+    menu.style.display = "none";
+  };
+});
+
+document.addEventListener("click", (e) => {
+  if (!dropdown.contains(e.target)) menu.style.display = "none";
+});
+
+
+// STORAGE
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+
+function save() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+
+// FUNNY PHRASES (не меняем)
+function funnyText(priority) {
+  const phrases = {
+    high: ["🔥 ЕБ*НУТЬСЯ", "💀 ЖЕСТЬ"],
+    medium: ["😏 норм", "👌 живём"],
+    low: ["🌿 ну ладно", "😴 можно было не делать"]
+  };
+  return phrases[priority];
+}
+
+
+// ICON
+function icon(p) {
+  return p === "high" ? "🔥" : p === "medium" ? "⚡" : "🌿";
+}
+
+
+// ВЕС ПРИОРИТЕТА (для сортировки)
+function priorityWeight(p) {
+  if (p === "high") return 3;
+  if (p === "medium") return 2;
+  return 1; // low
+}
+
+
+// ВСТАВКА НОВОЙ ЗАДАЧИ В ПРАВИЛЬНУЮ ПОЗИЦИЮ (без пересортировки всего списка)
+function insertTaskByPriority(newTask) {
+  const newWeight = priorityWeight(newTask.priority);
+  let insertIndex = tasks.length; // по умолчанию в конец
+
+  // ищем первую задачу с весом МЕНЬШЕ, чем у новой
+  for (let i = 0; i < tasks.length; i++) {
+    if (priorityWeight(tasks[i].priority) < newWeight) {
+      insertIndex = i;
+      break;
+    }
+  }
+  tasks.splice(insertIndex, 0, newTask);
+}
+
+
+// ADD
+function addTask() {
+  const text = document.getElementById("taskInput").value;
+  if (!text) return;
+
+  const newTask = {
+    text,
+    priority: selectedPriority,
+    done: false,
+    phrase: ""
+  };
+
+  insertTaskByPriority(newTask);
+
+  save();
+  render();
+  document.getElementById("taskInput").value = "";
+}
+
+
+// TOGGLE
+function toggleTask(i) {
+  tasks[i].done = !tasks[i].done;
+
+  if (tasks[i].done) {
+    const arr = funnyText(tasks[i].priority);
+    tasks[i].phrase = arr[Math.floor(Math.random() * arr.length)];
+  } else {
+    tasks[i].phrase = "";
+  }
+
+  save();
+  render();
+}
+
+
+// DELETE
+function deleteTask(i) {
+  tasks.splice(i, 1);
+  save();
+  render();
+}
+
+
+// DRAG & DROP
+let dragIndex = null;
+
+function handleDragStart(e) {
+  dragIndex = parseInt(this.dataset.index);
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', this.dataset.index);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const fromIndex = dragIndex;
+  const toIndex = parseInt(this.dataset.index);
+  if (fromIndex === toIndex) return;
+
+  const [removed] = tasks.splice(fromIndex, 1);
+  tasks.splice(toIndex, 0, removed);
+
+  save();
+  render();
+}
+
+function handleDragEnd(e) {
+  // ничего не делаем
+}
+
+
+// RENDER
+function render() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  tasks.forEach((t, i) => {
+    const div = document.createElement("div");
+    div.className = "task" + (t.done ? " done" : "") + " priority-" + t.priority;
+    div.draggable = true;
+    div.dataset.index = i;
+
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragover', handleDragOver);
+    div.addEventListener('drop', handleDrop);
+    div.addEventListener('dragend', handleDragEnd);
+
+    div.innerHTML = `
+      <div class="task-left">
+        <span class="text">${icon(t.priority)} ${t.text}</span>
+        <div style="font-size:12px;color:#9ad;">${t.phrase || ""}</div>
+      </div>
+
+      <div class="task-right">
+        <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTask(${i})">
+        <button class="small-btn" onclick="deleteTask(${i})">🗑</button>
+      </div>
+    `;
+
+    list.appendChild(div);
+  });
+}
+
+render();
+
+</script>
+
+</body>
+</html>
